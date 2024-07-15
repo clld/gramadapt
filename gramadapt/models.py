@@ -69,6 +69,15 @@ class Rationale(Base, common.IdNameDescriptionMixin):
     count_questions = Column(Integer)
     domains = Column(Unicode)
 
+    @property
+    def primary_contributors(self):
+        return [assoc.contributor for assoc in
+                sorted(self.contributor_assocs, key=lambda a: (a.ord, a.contributor.id))]
+
+    @property
+    def secondary_contributors(self):
+        return []
+
 
 class RationaleReference(Base, HasSourceNotNullMixin):
     __table_args__ = (
@@ -76,6 +85,23 @@ class RationaleReference(Base, HasSourceNotNullMixin):
     )
     rationale_pk = Column(Integer, ForeignKey('rationale.pk'), nullable=False)
     rationale = relationship(Rationale, innerjoin=True, backref="references")
+
+
+class RationaleContributor(Base):
+
+    """Many-to-many association between contributors and contributions."""
+
+    __table_args__ = (UniqueConstraint('contributor_pk', 'rationale_pk'),)
+
+    contributor_pk = Column(Integer, ForeignKey('contributor.pk'), nullable=False)
+    rationale_pk = Column(Integer, ForeignKey('rationale.pk'), nullable=False)
+
+    # contributors are ordered.
+    ord = Column(Integer, default=1)
+
+    rationale = relationship(Rationale, innerjoin=True, backref='contributor_assocs')
+    contributor = relationship(
+        common.Contributor, innerjoin=True, lazy=False, backref='rationale_assocs')
 
 
 @implementer(interfaces.IParameter)

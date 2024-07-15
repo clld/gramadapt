@@ -13,7 +13,7 @@ ${markdown(req, ctx.description.replace('## References', '')).replace('Authors:'
 
 <%def name="sidebar()">
 <%util:well title="Author">
-<p>${ctx.authors}</p>
+<p>${h.linked_contributors(req, ctx)}</p>
 </%util:well>
 <%util:well title="Questions">
 <ul>

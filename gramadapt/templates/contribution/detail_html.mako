@@ -38,3 +38,9 @@ $(document).ready(function() {
 });
     </script>
 </div>
+
+<%def name="sidebar()">
+<%util:well title="Author">
+<p>${h.linked_contributors(req, ctx)}</p>
+</%util:well>
+</%def>

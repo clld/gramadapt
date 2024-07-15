@@ -19,7 +19,7 @@ from gramadapt import models
 
 def main(args):
     data = Data()
-    data.add(
+    ds = data.add(
         common.Dataset,
         gramadapt.__name__,
         id=gramadapt.__name__,
@@ -35,15 +35,18 @@ def main(args):
             'license_name': 'Creative Commons Attribution 4.0 International License'},
 
     )
+    for i, row in enumerate(args.cldf.iter_rows('contributors.csv')):
+        c = data.add(
+            common.Contributor,
+            row['ID'],
+            id=row['ID'],
+            name=row['Name'])
+        if row['Editor']:
+            DBSession.add(common.Editor(dataset=ds, ord=i + 1, contributor=c))
+    DBSession.add(common.Editor(
+        dataset=ds, ord=i + 2, contributor=common.Contributor(id='forkel', name='Robert Forkel')))
 
     colors = qualitative_colors(34)
-    contrib = data.add(
-        common.Contribution,
-        None,
-        id='cldf',
-        name=args.cldf.properties.get('dc:title'),
-        description=args.cldf.properties.get('dc:bibliographicCitation'),
-    )
 
     for rec in bibtex.Database.from_file(args.cldf.bibpath, lowercase=True):
         data.add(common.Source, rec.id, _obj=bibtex2source(rec))
@@ -61,8 +64,9 @@ def main(args):
             for ref in c.references:
                 DBSession.add(
                     models.RationaleReference(rationale=r, source=data['Source'][ref.source.id]))
+            cls, kw = models.RationaleContributor, {'rationale': r}
         else:
-            data.add(
+            r = data.add(
                 models.ContactSet,
                 c.id,
                 id=c.id,
@@ -70,6 +74,9 @@ def main(args):
                 authors=c.cldf.contributor,
                 color=colors.pop()
             )
+            cls, kw = common.ContributionContributor, {'contribution': r}
+        for i, cid in enumerate(c.data['Author_IDs']):
+            DBSession.add(cls(contributor=data['Contributor'][cid], ord=i + 1, **kw))
 
     question_groups = {r['ID']: r for r in args.cldf.iter_rows('questions.csv')}
 
