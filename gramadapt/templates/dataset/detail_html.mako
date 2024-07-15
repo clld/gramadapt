@@ -9,11 +9,8 @@
     </div>
 </%def>
 
-<h2>Welcome to gramadapt</h2>
+<h2>${ctx.name}</h2>
 
 <p class="lead">
-    Abstract.
-</p>
-<p>
-    More content.
+    ${ctx.description}
 </p>

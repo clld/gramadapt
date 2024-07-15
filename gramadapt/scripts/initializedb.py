@@ -1,15 +1,17 @@
+import re
 import itertools
 import collections
 
 from clldutils.misc import nfilter
-from clldutils.color import qualitative_colors
+from clldutils.color import qualitative_colors, sequential_colors, diverging_colors
 from clld.cliutil import Data, bibtex2source
 from clld.db.meta import DBSession
 from clld.db.models import common
 from clld.lib import bibtex
+from matplotlib import colormaps
+from matplotlib.colors import rgb2hex
 
 from pycldf import Sources
-
 
 import gramadapt
 from gramadapt import models
@@ -22,7 +24,8 @@ def main(args):
         gramadapt.__name__,
         id=gramadapt.__name__,
         domain='',
-
+        name=args.cldf.properties['dc:title'],
+        description=args.cldf.properties['dc:description'],
         publisher_name="Max Planck Institute for Evolutionary Anthropology",
         publisher_place="Leipzig",
         publisher_url="http://www.eva.mpg.de",
@@ -33,7 +36,7 @@ def main(args):
 
     )
 
-
+    colors = qualitative_colors(34)
     contrib = data.add(
         common.Contribution,
         None,
@@ -42,6 +45,35 @@ def main(args):
         description=args.cldf.properties.get('dc:bibliographicCitation'),
     )
 
+    for rec in bibtex.Database.from_file(args.cldf.bibpath, lowercase=True):
+        data.add(common.Source, rec.id, _obj=bibtex2source(rec))
+
+    for c in args.cldf.objects('ContributionTable'):
+        if c.data['Type'] == 'rationale':
+            r = data.add(
+                models.Rationale,
+                c.id,
+                id=c.id,
+                name=c.cldf.name,
+                description=c.cldf.description,
+                authors=c.cldf.contributor,
+            )
+            for ref in c.references:
+                DBSession.add(
+                    models.RationaleReference(rationale=r, source=data['Source'][ref.source.id]))
+        else:
+            data.add(
+                models.ContactSet,
+                c.id,
+                id=c.id,
+                name=c.cldf.name,
+                authors=c.cldf.contributor,
+                color=colors.pop()
+            )
+
+    question_groups = {r['ID']: r for r in args.cldf.iter_rows('questions.csv')}
+
+    # Merge parameters F and S into a language property which can be used to inform map markers.
     for lang in args.cldf.iter_rows('LanguageTable', 'id', 'glottocode', 'name', 'latitude', 'longitude'):
         data.add(
             models.Variety,
@@ -53,8 +85,11 @@ def main(args):
             glottocode=lang['glottocode'],
         )
 
-    for rec in bibtex.Database.from_file(args.cldf.bibpath, lowercase=True):
-        data.add(common.Source, rec.id, _obj=bibtex2source(rec))
+    for v in args.cldf.iter_rows('ValueTable'):
+        if v['Parameter_ID'] == 'F' and v['Value'] == 'Yes':
+            data['Variety'][v['Language_ID']].focus = True
+        if v['Parameter_ID'] == 'S':
+            data['Variety'][v['Language_ID']].contactset = data['ContactSet'][v['Contactset_ID']]
 
     refs = collections.defaultdict(list)
 
@@ -62,35 +97,71 @@ def main(args):
     # FIXME: store the contact pair data in such a way that it can be displayed as one parameter!
     #
 
+    #
+    # load time ranges as one parameter, with an artificial domain, color code
+    # colors.rgb2hex(colormaps['Greens'](0)[:3])
+    # Param ID endswith('N0') or N1
+    ranges = {}
+    for param in args.cldf.objects('ParameterTable'):
+        if param.id.endswith('N0'):
+            ranges[param.id[:-2]] = collections.defaultdict(list)
+
     for param in args.cldf.iter_rows('ParameterTable', 'id', 'name'):
+        if param['id'] in {'S', 'F'}:
+            continue
+        if param['id'].endswith('N0') or param['id'].endswith('N1'):
+            continue
+        rationale = question_groups.get(param['Question_ID'], {}).get('Rationale')
         data.add(
-            models.Feature,
+            models.Question,
             param['id'],
             id=param['id'],
-            name='{} [{}]'.format(param['name'], param['id']),
+            name='{}'.format(param['name']),
+            datatype=param['datatype'],
+            rationale=data['Rationale'].get(rationale),
+            dom=param['Domain'],
     )
+
     for pid, codes in itertools.groupby(
         sorted(
-            args.cldf.iter_rows('CodeTable', 'id', 'name', 'description', 'parameterReference'),
-            key=lambda v: (v['parameterReference'], v['id'])),
-        lambda v: v['parameterReference'],
+            args.cldf.objects('CodeTable'),
+            key=lambda v: (
+                    v.cldf.parameterReference,
+                    v.data['Ordinal'] or 99,
+                    re.sub(r'-B$', '-zz', v.id))),
+        lambda v: v.cldf.parameterReference,
     ):
         codes = list(codes)
-        colors = qualitative_colors(len(codes))
-        for code, color in zip(codes, colors):
+        param = codes[0].parameter
+        if param.id in {'S', 'F'}:
+            continue
+        assert codes[-1].cldf.name == 'B', '{}: {}'.format(param.id, [c.cldf.name for c in codes])
+        if param.data['datatype'] == 'Scalar':
+            colors = diverging_colors(len(codes) - 1)
+        elif param.data['datatype'] == 'TypesSequential':
+            colors = sequential_colors(len(codes) - 1)
+        else:
+            colors = qualitative_colors(len(codes) - 1)
+        for code, color in zip(codes, colors + ['#000000']):
             data.add(
                 common.DomainElement,
-                code['id'],
-                id=code['id'],
-                name=code['name'],
-                description=code['description'],
-                parameter=data['Feature'][code['parameterReference']],
-                jsondata=dict(color=color),
+                code.id,
+                id=code.id,
+                name=code.cldf.name,
+                description=code.cldf.description,
+                parameter=data['Question'][param.id],
+                jsondata=dict(icon=('c' if code.cldf.name != 'B' else 't') + color.replace('#', '')),
             )
+
     for val in args.cldf.iter_rows(
             'ValueTable',
             'id', 'value', 'languageReference', 'parameterReference', 'codeReference', 'source'):
         if val['value'] is None:  # Missing values are ignored.
+            continue
+        if val['parameterReference'] in {'S', 'F'}:
+            continue
+        if val['parameterReference'][-2:] in {'N0', 'N1'}:
+            ranges[val['parameterReference'][:-2]][val['Contactset_ID']].append(val)
             continue
         vsid = (val['languageReference'], val['parameterReference'])
         vs = data['ValueSet'].get(vsid)
@@ -100,8 +171,8 @@ def main(args):
                 vsid,
                 id='-'.join(vsid),
                 language=data['Variety'][val['languageReference']],
-                parameter=data['Feature'][val['parameterReference']],
-                contribution=contrib,
+                parameter=data['Question'][val['parameterReference']],
+                contribution=data['ContactSet'][val['Contactset_ID']],
             )
         for ref in val.get('source', []):
             sid, pages = Sources.parse(ref)
@@ -113,7 +184,66 @@ def main(args):
             name=val['value'],
             valueset=vs,
             domainelement=data['DomainElement'][val['codeReference']] if val['codeReference'] else None,
+            description=val['Comment'],
         )
+    #
+    # Now insert data for time ranges!
+    #
+    cm = colormaps['Greens']
+    for pid, values in ranges.items():
+        assert all(len(v) == 2 for _, v in values.items())
+        middles = {}
+        for setid, vals in values.items():
+            middles[setid] = sum(int(v['Value']) for v in vals) / 2
+        minimum = min(middles.values())
+        maximun = max(middles.values())
+        #
+        #
+        #
+        param = data['Question'][pid]
+        p = data.add(
+            models.Question,
+            pid + 'N',
+            id=pid + 'N',
+            name=param.name + ' Coarse time range',
+            datatype='Value',
+            rationale=param.rationale,
+            dom=param.dom,
+        )
+        for sid, vals in values.items():
+            # create a domainelement, with appropriately colored icon!
+            vals = sorted(vals, key=lambda i: int(i['Value']))
+            fmt = lambda n: ('present' if n >= 2020 else str(n)) if n > 0 \
+                else '{}BP'.format(n - 1950).replace('-', '')
+            n = '{}-{}'.format(fmt(int(vals[0]['Value'])), fmt(int(vals[1]['Value'])))
+            cid = '{}N{}'.format(pid, n)
+            de = data['DomainElement'].get(cid)
+            if not de:
+                de = data.add(
+                    common.DomainElement,
+                    cid,
+                    id=cid,
+                    name=n,
+                    description=None,
+                    parameter=data['Question'][param.id],
+                    jsondata=dict(icon=('c' + rgb2hex(cm((middles[sid] - minimum) / (maximun - minimum))))),
+                )
+            vs = data.add(
+                common.ValueSet,
+                '{}N{}'.format(pid, sid),
+                id='{}N{}'.format(pid, sid),
+                language=data['Variety'][vals[0]['languageReference']],
+                parameter=p,
+                contribution=data['ContactSet'][sid],
+            )
+            data.add(
+                common.Value,
+                '{}N{}'.format(pid, sid),
+                id='{}N{}'.format(pid, sid),
+                name=n,
+                valueset=vs,
+                domainelement=de,
+            )
 
     for (vsid, sid), pages in refs.items():
         DBSession.add(common.ValueSetReference(
@@ -123,9 +253,11 @@ def main(args):
         ))
 
 
-
 def prime_cache(args):
     """If data needs to be denormalized for lookup, do that here.
     This procedure should be separate from the db initialization, because
     it will have to be run periodically whenever data has been updated.
     """
+    for r in DBSession.query(models.Rationale):
+        r.count_questions = len(r.questions)
+        r.domains = ' '.join(sorted({q.dom for q in r.questions if q.dom}))

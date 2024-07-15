@@ -1,17 +1,18 @@
-# Translations template for gramadapt.
+# English translations for PROJECT.
 # Copyright (C) 2024 ORGANIZATION
-# This file is distributed under the same license as the gramadapt project.
+# This file is distributed under the same license as the PROJECT project.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2024.
 #
-#, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: gramadapt 0.0\n"
+"Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2024-07-12 17:23+0200\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"PO-Revision-Date: 2024-07-12 17:22+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: en\n"
+"Language-Team: en <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -19,17 +20,17 @@ msgstr ""
 
 #: gramadapt/__init__.py:14
 msgid "Contribution"
-msgstr ""
+msgstr "Contact Set"
 
 #: gramadapt/__init__.py:15
 msgid "Contributions"
-msgstr ""
+msgstr "Contact Sets"
 
 #: gramadapt/__init__.py:16
 msgid "Parameter"
-msgstr ""
+msgstr "Question"
 
 #: gramadapt/__init__.py:17
 msgid "Parameters"
-msgstr ""
+msgstr "Questions"
 
