@@ -43,4 +43,7 @@ $(document).ready(function() {
 <%util:well title="Author">
 <p>${h.linked_contributors(req, ctx)}</p>
 </%util:well>
+<%util:well>
+${request.map.render()}
+</%util:well>
 </%def>
