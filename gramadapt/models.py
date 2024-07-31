@@ -114,9 +114,7 @@ class Question(CustomModelMixin, common.Parameter):
     question_group = Column(Unicode)
     datatype = Column(Unicode)
     dom = Column(Unicode)
-    #
-    # FIXME: link to rationale
-    #
+    count = Column(Integer)
     rationale_pk = Column(Integer, ForeignKey('rationale.pk'))
     rationale = relationship(Rationale, backref='questions')
 

@@ -278,3 +278,6 @@ def prime_cache(args):
     for r in DBSession.query(models.Rationale):
         r.count_questions = len(r.questions)
         r.domains = ' '.join(sorted({q.dom for q in r.questions if q.dom}))
+
+    for q in DBSession.query(models.Question):
+        q.count = len(q.valuesets)

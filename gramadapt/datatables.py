@@ -78,6 +78,7 @@ class Questions(Parameters):
         return [
             IdCol(self, 'id', sClass='left'),
             LinkCol(self, 'name'),
+            Col(self, 'count', sTitle='# sets', model_col=models.Question.count),
             Col(self,
                 'domain',
                 model_col=models.Question.dom,
