@@ -50,6 +50,10 @@ class ContactSet(CustomModelMixin, common.Contribution):
             .options(joinedload(common.Value.valueset).joinedload(common.ValueSet.parameter))
             .all())
 
+    def color_rgba(self, opacity=0.5):
+        return 'rgba({}, {})'.format(
+            ', '.join([str(int(self.color[i:i + 2], 16)) for i in (1, 3, 5)]), opacity)
+
     @property
     def focus_language(self):
         for l in self.languages:
@@ -115,3 +119,27 @@ class Question(CustomModelMixin, common.Parameter):
     #
     rationale_pk = Column(Integer, ForeignKey('rationale.pk'))
     rationale = relationship(Rationale, backref='questions')
+
+    @property
+    def minimum(self):
+        if not self.datatype == 'Value':
+            return
+        return min(vs.jsondata['start'] for vs in self.valuesets)
+
+    @property
+    def maximum(self):
+        if not self.datatype == 'Value':
+            return
+        return max(vs.jsondata['end'] for vs in self.valuesets)
+
+    def iter_ranges(self):
+        if not self.datatype == 'Value':
+            return
+        e = max(vs.jsondata['end'] for vs in self.valuesets)
+        s = min(vs.jsondata['start'] for vs in self.valuesets)
+
+        def percent(year):
+            return (year - s) / (e - s) * 100
+
+        for vs in self.valuesets:
+            yield vs, percent(vs.jsondata['start']) - 0.15, percent(vs.jsondata['end'] - vs.jsondata['start'] + s) - 0.15

@@ -32,7 +32,7 @@
 % endif
 
 <div style="clear: both"/>
-% if ctx.datatype not in {'Comment'}:
+% if ctx.datatype not in {'Comment', 'Value'}:
 ${request.map.render()}
 % endif
 
@@ -47,6 +47,31 @@ ${request.map.render()}
         <span class="alignment">${item.values[0].name}</span>
     </td>
 </%util:table>
+% elif ctx.datatype == 'Value':
+<table style="width: 100%" class="table table-condensed">
+    <tr>
+        <th style="width: 70%">
+            <div style="float: left">${ctx.minimum}</div>
+            <div style="float: right">${ctx.maximum}</div>
+        </th>
+        <th style="width: 10%"> </th>
+        <th style="width: 20%"> </th>
+    </tr>
+    % for vs, s, e in ctx.iter_ranges():
+    <tr>
+        <td>
+            % if s > 0:
+                <div style="float: left; width: ${s}%; background-color: white; color: white">x</div>
+            % endif
+            <div title="${vs.values[0].name + ('\n' if vs.jsondata['comment'] else '') + vs.jsondata['comment']}" style="color: ${vs.contribution.color_rgba(0.0)}; overflow: visible; float: left; width: ${e}%; background-color: ${vs.contribution.color_rgba(0.2)}; border: 1px solid ${vs.contribution.color};">
+                x
+            </div>
+        </td>
+        <td>${vs.values[0].name}</td>
+        <td>${h.link(req, vs.contribution)}</td>
+    </tr>
+    % endfor
+</table>
 % else:
 ${request.get_datatable('values', h.models.Value, parameter=ctx).render()}
 % endif

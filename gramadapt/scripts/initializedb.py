@@ -108,10 +108,11 @@ def main(args):
     # load time ranges as one parameter, with an artificial domain, color code
     # colors.rgb2hex(colormaps['Greens'](0)[:3])
     # Param ID endswith('N0') or N1
-    ranges = {}
+    ranges, range_comments = {}, {}
     for param in args.cldf.objects('ParameterTable'):
         if param.id.endswith('N0'):
             ranges[param.id[:-2]] = collections.defaultdict(list)
+            range_comments[param.id[:-2]] = {}
 
     for param in args.cldf.iter_rows('ParameterTable', 'id', 'name'):
         if param['id'] in {'S', 'F'}:
@@ -167,9 +168,14 @@ def main(args):
             continue
         if val['parameterReference'] in {'S', 'F'}:
             continue
+
         if val['parameterReference'][-2:] in {'N0', 'N1'}:
             ranges[val['parameterReference'][:-2]][val['Contactset_ID']].append(val)
             continue
+
+        if val['parameterReference'] in range_comments:
+            range_comments[val['parameterReference']][val['Contactset_ID']] = val['value']
+
         vsid = (val['languageReference'], val['parameterReference'])
         vs = data['ValueSet'].get(vsid)
         if not vs:
@@ -242,6 +248,10 @@ def main(args):
                 language=data['Variety'][vals[0]['languageReference']],
                 parameter=p,
                 contribution=data['ContactSet'][sid],
+                jsondata=dict(
+                    comment=range_comments[pid].get(sid, ''),
+                    start=int(vals[0]['Value']),
+                    end=int(vals[1]['Value'])),
             )
             data.add(
                 common.Value,
