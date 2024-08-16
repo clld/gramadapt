@@ -3,7 +3,7 @@ from clld.web import datatables
 from clld.web.datatables.base import LinkCol, Col, LinkToMapCol, DataTable, IdCol
 from clld.web.datatables.contribution import Contributions
 from clld.web.datatables.parameter import Parameters
-from clld.web.datatables.value import Values, ValueNameCol
+from clld.web.datatables.value import Values
 from clld.db.models import common
 from clld.db.util import get_distinct_values, icontains
 from clld.web.util.helpers import map_marker_img, JS_CLLD
@@ -74,7 +74,26 @@ class Contactsets(Contributions):
 
 
 class Questions(Parameters):
+    __constraints__ = [models.Rationale]
+
+    def base_query(self, query):
+        query = Parameters.base_query(self, query)
+        if self.rationale:
+            return query.filter(models.Question.domain_rationale_pk == self.rationale.pk)
+        return query
+
     def col_defs(self):
+        if self.rationale:
+            return [
+                IdCol(self, 'id', sClass='left'),
+                LinkCol(self, 'name'),
+                Col(self, 'count', sTitle='# sets', model_col=models.Question.count),
+                Col(self,
+                    'datatype',
+                    model_col=models.Question.datatype,
+                    choices=get_distinct_values(models.Question.datatype)),
+            ]
+
         return [
             IdCol(self, 'id', sClass='left'),
             LinkCol(self, 'name'),
@@ -90,13 +109,30 @@ class Questions(Parameters):
         ]
 
 
+class ValueNameCol(Col):
+    def get_obj(self, item):
+        return item.valueset
+
+    def format(self, item):
+        label = str(item)
+        if self.dt.parameter:
+            label = HTML.span(map_marker_img(self.dt.req, item), literal('&nbsp;'), label)
+        return label
+
+    def order(self):
+        return common.DomainElement.number \
+            if self.dt.parameter and self.dt.parameter.domain \
+            else common.Value.description
+
+    def search(self, qs):
+        if self.dt.parameter and self.dt.parameter.domain:
+            return common.DomainElement.name.__eq__(qs)
+        return icontains(common.Value.description, qs)
+
+
 class Answers(Values):
     def base_query(self, query):
         query = query.join(common.ValueSet).options(joinedload(common.Value.valueset))
-
-        #if self.language:
-        #    query = query.join(ValueSet.parameter)
-        #    return query.filter(ValueSet.language_pk == self.language.pk)
 
         if self.parameter:
             query = query.join(common.ValueSet.contribution)
@@ -129,12 +165,20 @@ class Answers(Values):
 
         if self.contribution:
             return [
-                name_col,
+                #
+                # FIXME: dom column with dropdown!
+                #
+                Col(self,
+                    'domain',
+                    model_col=models.Question.dom,
+                    format=lambda o: o.valueset.parameter.dom,
+                    choices=get_distinct_values(models.Question.dom)),
                 LinkCol(self,
                         'parameter',
                         sTitle=self.req.translate('Parameter'),
                         model_col=common.Parameter.name,
                         get_object=lambda i: i.valueset.parameter),
+                name_col,
                 Col(self, 'comment', model_col=common.Value.description),
             ]
 

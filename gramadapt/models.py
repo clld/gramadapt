@@ -40,15 +40,17 @@ class ContactSet(CustomModelMixin, common.Contribution):
     authors = Column(Unicode)
 
     def timeframe_comments(self):
-        return list(
+        return sorted(list(
             DBSession.query(common.Value)
-            .join(common.ValueSet).join(common.Parameter).join(Rationale)
-            .filter(Rationale.id.in_(['P1', 'P2', 'P3']))
+            .join(common.ValueSet).join(common.Parameter)
+            .filter(Question.timeframe_pk != None)
             .filter(Question.datatype == 'Comment')
             .filter(common.Value.name != None)
             .filter(common.ValueSet.contribution_pk == self.pk)
             .options(joinedload(common.Value.valueset).joinedload(common.ValueSet.parameter))
-            .all())
+            .all()), key=lambda v: (
+                0 if v.valueset.parameter.dom == 'OV' else 1,
+                v.valueset.parameter.id))
 
     def color_rgba(self, opacity=0.5):
         return 'rgba({}, {})'.format(
@@ -81,6 +83,21 @@ class Rationale(Base, common.IdNameDescriptionMixin):
     @property
     def secondary_contributors(self):
         return []
+
+    @property
+    def markdown(self):
+        res = []
+        for line in self.description.split('\n'):
+            if line.startswith('# '):
+                continue
+            if line.startswith('## References'):
+                continue
+            if line.startswith('Authors:'):
+                continue
+            if line.startswith('#'):
+                line = '#' + line
+            res.append(line)
+        return '\n'.join(res)
 
 
 class RationaleReference(Base, HasSourceNotNullMixin):
@@ -115,8 +132,18 @@ class Question(CustomModelMixin, common.Parameter):
     datatype = Column(Unicode)
     dom = Column(Unicode)
     count = Column(Integer)
+    domain_rationale_pk = Column(Integer, ForeignKey('rationale.pk'))
+    domain_rationale = relationship(
+        Rationale,
+        foreign_keys=[domain_rationale_pk],
+        backref='domain_questions')
     rationale_pk = Column(Integer, ForeignKey('rationale.pk'))
-    rationale = relationship(Rationale, backref='questions')
+    rationale = relationship(
+        Rationale,
+        foreign_keys=[rationale_pk],
+        backref='questions')
+    timeframe_pk = Column(Integer, ForeignKey('question.pk'))
+    timeframe = relationship('Question', remote_side=[pk], foreign_keys=[timeframe_pk])
 
     @property
     def minimum(self):

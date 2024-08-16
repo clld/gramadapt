@@ -16,10 +16,13 @@
     <div class="tab-content" style="overflow: visible;">
         <div id="timeframe" class="tab-pane active">
             % for v in ctx.timeframe_comments():
+            <h4>${h.link(req, v.valueset.parameter.timeframe, label=v.valueset.parameter.name)}</h4>
             <p>
-                <strong>${v.valueset.parameter.name}</strong><br/>
                 ${v.name}
             </p>
+                % if v.description:
+            <p><em>${v.description}</em></p>
+                % endif
             % endfor
         </div>
         <div id="answers" class="tab-pane">

@@ -8,19 +8,24 @@
 
 
 % if ctx.description:
-${markdown(req, ctx.description.replace('## References', '')).replace('Authors:', '')|n}
+${markdown(req, ctx.markdown)|n}
 % endif
 
-<%def name="sidebar()">
-<%util:well title="Author">
-<p>${h.linked_contributors(req, ctx)}</p>
-</%util:well>
-<%util:well title="Questions">
+<h3>Questions</h3>
+% if ctx.domain_questions:
+${request.get_datatable('parameters', h.models.Parameter, rationale=ctx).render()}
+% else:
 <ul>
     % for q in ctx.questions:
     <li>${h.link(req, q)}</li>
     % endfor
 </ul>
+% endif
+
+
+<%def name="sidebar()">
+<%util:well title="Author">
+<p>${h.linked_contributors(req, ctx)}</p>
 </%util:well>
 <%util:well title="Sources">
 ${util.sources_list(sorted([ref.source for ref in ctx.references], key=lambda s: s.name))}

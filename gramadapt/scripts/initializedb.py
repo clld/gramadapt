@@ -43,8 +43,6 @@ def main(args):
             name=row['Name'])
         if row['Editor']:
             DBSession.add(common.Editor(dataset=ds, ord=i + 1, contributor=c))
-    DBSession.add(common.Editor(
-        dataset=ds, ord=i + 2, contributor=common.Contributor(id='forkel', name='Robert Forkel')))
 
     colors = qualitative_colors(34)
 
@@ -119,14 +117,15 @@ def main(args):
             continue
         if param['id'].endswith('N0') or param['id'].endswith('N1'):
             continue
-        rationale = question_groups.get(param['Question_ID'], {}).get('Rationale')
+        rationales = question_groups.get(param['Question_ID'], {}).get('Rationale', [])
         data.add(
             models.Question,
             param['id'],
             id=param['id'],
             name='{}'.format(param['name']),
             datatype=param['datatype'],
-            rationale=data['Rationale'].get(rationale),
+            domain_rationale=data['Rationale'][rationales[0]] if len(rationales) > 0 else None,
+            rationale=data['Rationale'][rationales[1]] if len(rationales) > 1 else None,
             dom=param['Domain'],
     )
 
@@ -221,6 +220,7 @@ def main(args):
             name=param.name + ' Coarse time range',
             datatype='Value',
             rationale=param.rationale,
+            domain_rationale=param.domain_rationale,
             dom=param.dom,
         )
         for sid, vals in values.items():
@@ -276,8 +276,12 @@ def prime_cache(args):
     it will have to be run periodically whenever data has been updated.
     """
     for r in DBSession.query(models.Rationale):
-        r.count_questions = len(r.questions)
+        r.count_questions = len(r.questions or r.domain_questions)
         r.domains = ' '.join(sorted({q.dom for q in r.questions if q.dom}))
+
+    qs = {q.id: q for q in DBSession.query(models.Question)}
 
     for q in DBSession.query(models.Question):
         q.count = len(q.valuesets)
+        if q.id + 'N' in qs:
+            q.timeframe = qs[q.id + 'N']
