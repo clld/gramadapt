@@ -24,7 +24,9 @@
 <h2>${_('Parameter')} ${ctx.name}</h2>
 <dl class="dl-horizontal">
     <dt>Domain:</dt><dd>${h.link(req, ctx.domain_rationale, label=ctx.dom)}</dd>
+    % if ctx.rationale:
     <dt>Rationale:</dt><dd>${h.link(req, ctx.rationale)}</dd>
+    % endif
     <dt>Datatype:</dt><dd>${ctx.datatype}</dd>
 </dl>
 % if ctx.description:
