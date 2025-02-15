@@ -2,9 +2,19 @@
 
 <%def name="sidebar()">
     <div class="well">
-        <h3>Sidebar</h3>
+        <h3>Cite as</h3>
         <p>
-            Content
+            Eri Kashima, Francesca Di Garbo, Oona Raatikainen, Kaius Sinnemäki, Ricardo Napoleão de Souza,
+            Anu Hyvönen, Kayleigh Karinen, Rosnátaly Avelino, Sacha Beck, Anna Berge, Ana Blanco, Ross Bowden,
+            Nicolás Brid, Joseph Brincat, María Belén Carpio, Alexander Cobbinah, Paola Cúneo, Anne-Maria Fehn,
+            Saloumeh Gholami, Arun Ghosh, Hannah Gibson, Elizabeth Hall, Katja Hannß, Hannah Haynie, Jerry Jacka,
+            Matias Jenny, Richard Kowalik, Sonal Kulkarni-Joshi, Maarten Mous, Marcela Mendoza, Cristina Messineo,
+            Francesca Moro, Hank Nater, Michelle Ocasio, Bruno Olsson, Ana María Ospina Bozzi, Agustina Paredes,
+            Admire Phiri, Nicolas Quint, Erika Sandman, Dineke Schokkin, Ruth Singer, Ellen Smith-Dennis,
+            Lameen Souag, Yunus Sulistyono, Yvonne Treis, Matthias Urban, Jill Vaughan, Deginet Wotango Doyiso,
+            Georg Ziegelmeyer, Veronika Zikmundová,
+            Robert Forkel. (2025). GramAdapt Crosslinguistic Social Contact Dataset (v1.1) [Data set]. Zenodo.
+            <a href="https://doi.org/10.5281/zenodo.14872294">https://doi.org/10.5281/zenodo.14872294</a>
         </p>
     </div>
 </%def>
