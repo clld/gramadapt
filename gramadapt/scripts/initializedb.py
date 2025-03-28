@@ -44,7 +44,7 @@ def main(args):
         if row['Editor']:
             DBSession.add(common.Editor(dataset=ds, ord=i + 1, contributor=c))
 
-    colors = qualitative_colors(34)
+    colors = qualitative_colors(35)
 
     for rec in bibtex.Database.from_file(args.cldf.bibpath, lowercase=True):
         data.add(common.Source, rec.id, _obj=bibtex2source(rec))
@@ -68,7 +68,7 @@ def main(args):
                 models.ContactSet,
                 c.id,
                 id=c.id,
-                name=c.cldf.name,
+                name='{} [{}]'.format(c.cldf.name, c.id),
                 authors=c.cldf.contributor,
                 color=colors.pop()
             )
@@ -89,12 +89,16 @@ def main(args):
             longitude=lang['longitude'],
             glottocode=lang['glottocode'],
         )
+    DBSession.flush()
 
     for v in args.cldf.iter_rows('ValueTable'):
         if v['Parameter_ID'] == 'F' and v['Value'] == 'Yes':
             data['Variety'][v['Language_ID']].focus = True
         if v['Parameter_ID'] == 'S':
-            data['Variety'][v['Language_ID']].contactset = data['ContactSet'][v['Contactset_ID']]
+            DBSession.add(models.VarietyContactSet(
+                language_pk=data['Variety'][v['Language_ID']].pk,
+                contribution_pk=data['ContactSet'][v['Contactset_ID']].pk
+            ))
 
     refs = collections.defaultdict(list)
 
@@ -162,7 +166,7 @@ def main(args):
 
     for val in args.cldf.iter_rows(
             'ValueTable',
-            'id', 'value', 'languageReference', 'parameterReference', 'codeReference', 'source'):
+            'id', 'value', 'languageReference', 'parameterReference', 'codeReference', 'contributionReference', 'source'):
         if val['value'] is None:  # Missing values are ignored.
             continue
         if val['parameterReference'] in {'S', 'F'}:
@@ -175,7 +179,7 @@ def main(args):
         if val['parameterReference'] in range_comments:
             range_comments[val['parameterReference']][val['Contactset_ID']] = val['value']
 
-        vsid = (val['languageReference'], val['parameterReference'])
+        vsid = (val['contributionReference'], val['parameterReference'])
         vs = data['ValueSet'].get(vsid)
         if not vs:
             vs = data.add(

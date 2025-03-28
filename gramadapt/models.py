@@ -29,8 +29,10 @@ class Variety(CustomModelMixin, common.Language):
     pk = Column(Integer, ForeignKey('language.pk'), primary_key=True)
     glottocode = Column(Unicode)
     focus = Column(Boolean, default=False)
-    contactset_pk = Column(Integer, ForeignKey('contribution.pk'))
-    contactset = relationship(common.Contribution, backref='languages')
+
+    @property
+    def contactsets(self):
+        return [ca.contribution for ca in self.contribution_assocs]
 
 
 @implementer(interfaces.IContribution)
@@ -58,15 +60,25 @@ class ContactSet(CustomModelMixin, common.Contribution):
 
     @property
     def focus_language(self):
-        for l in self.languages:
-            if l.focus:
-                return l
+        for la in self.language_assocs:
+            if la.language.focus:
+                return la.language
 
     @property
     def neighbor_language(self):
-        for l in self.languages:
-            if not l.focus:
-                return l
+        for la in self.language_assocs:
+            if not la.language.focus:
+                return la.language
+
+
+class VarietyContactSet(Base):
+    __table_args__ = (
+        UniqueConstraint('language_pk', 'contribution_pk'),
+    )
+    language_pk = Column(Integer, ForeignKey('language.pk'), nullable=False)
+    language = relationship(common.Language, backref="contribution_assocs")
+    contribution_pk = Column(Integer, ForeignKey('contribution.pk'), nullable=False)
+    contribution = relationship(common.Contribution, backref="language_assocs")
 
 
 @implementer(IRationale)

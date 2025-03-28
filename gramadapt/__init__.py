@@ -29,7 +29,7 @@ class FeatureMapMarker(MapMarker):
         if IValue.providedBy(ctx):
             return data_url(icon(ctx.domainelement.jsondata['icon']))
         if ILanguage.providedBy(ctx):
-            return data_url(icon('{}{}'.format('c' if ctx.focus else 'd', ctx.contactset.color[1:])))
+            return data_url(icon('{}{}'.format('c' if ctx.focus else 'd', ctx.contactsets[0].color[1:])))
         return super(FeatureMapMarker, self).__call__(ctx, req)
 
 
