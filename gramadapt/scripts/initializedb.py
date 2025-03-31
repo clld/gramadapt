@@ -68,7 +68,7 @@ def main(args):
                 models.ContactSet,
                 c.id,
                 id=c.id,
-                name='{} [{}]'.format(c.cldf.name, c.id),
+                name=c.cldf.name,
                 authors=c.cldf.contributor,
                 color=colors.pop()
             )
