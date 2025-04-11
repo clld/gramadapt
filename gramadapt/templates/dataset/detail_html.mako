@@ -12,9 +12,9 @@
             Francesca Moro, Hank Nater, Michelle Ocasio, Bruno Olsson, Ana María Ospina Bozzi, Agustina Paredes,
             Admire Phiri, Nicolas Quint, Erika Sandman, Dineke Schokkin, Ruth Singer, Ellen Smith-Dennis,
             Lameen Souag, Yunus Sulistyono, Yvonne Treis, Matthias Urban, Jill Vaughan, Deginet Wotango Doyiso,
-            Georg Ziegelmeyer, Veronika Zikmundová,
-            Robert Forkel. (2025). GramAdapt Crosslinguistic Social Contact Dataset (v1.1) [Data set]. Zenodo.
-            <a href="https://doi.org/10.5281/zenodo.14872294">https://doi.org/10.5281/zenodo.14872294</a>
+            Georg Ziegelmeyer, Veronika Zikmundová, Robert Forkel. (2025).
+            GramAdapt Crosslinguistic Social Contact Dataset (v1.2) [Data set]. Zenodo.
+            <a href="https://doi.org/10.5281/zenodo.15196305">https://doi.org/10.5281/zenodo.15196305</a>
         </p>
     </div>
 </%def>
