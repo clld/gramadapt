@@ -22,7 +22,7 @@ setup(
         'clld',
         'clld-markdown-plugin',
         'clldmpg',
-
+        'psycopg2',
 ],
 extras_require={
         'dev': ['flake8', 'waitress'],
